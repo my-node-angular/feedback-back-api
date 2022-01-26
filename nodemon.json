@@ -1,0 +1,8 @@
+{
+  "env":{
+    "DB_CONNECTION": "mongodb+srv://test:Cheu0058@cluster0.ovdik.mongodb.net/feedback",
+    "JWT_KEY": "secret",
+    "PORT": "3000"
+  }
+
+}
