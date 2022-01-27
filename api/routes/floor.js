@@ -9,6 +9,7 @@ router.get('/', (req, res, next) => {
     .exec()
     .then((floors) => {
       res.status(200).json({
+        status: 'Get all flooor',
         count: floors.length,
         floors: floors.map((floor) => {
           return {
@@ -36,7 +37,7 @@ router.post('/', (req, res, next) => {
     .then((floor) => {
       if (floor && floor.length) {
         return res.status(409).json({
-          message: 'This Floor Exist',
+          status: 'This Floor Exist',
         });
       } else {
         const floor = new Floor({
@@ -47,13 +48,13 @@ router.post('/', (req, res, next) => {
           .then((result) => {
             console.log(result);
             res.status(201).json({
-              message: 'floor created',
+              status: 'floor created',
               floor: {
                 name: result.name,
                 _id: result._id,
               },
               request: {
-                type: 'POST',
+                type: 'GET',
                 url: 'http://localhost:3000/floors/' + result._id,
               },
             });
@@ -77,6 +78,7 @@ router.get('/:floorId', (req, res, next) => {
       console.log(floor);
       if (floor) {
         res.status(200).json({
+          status: 'Get single flooor',
           floor: floor,
           request: {
             type: 'GET',
@@ -84,8 +86,8 @@ router.get('/:floorId', (req, res, next) => {
           },
         });
       } else {
-        res.status(404).json({
-          message: 'No valid entry found',
+        return res.status(404).json({
+          message: 'Floor not found!',
         });
       }
     })
@@ -99,37 +101,52 @@ router.get('/:floorId', (req, res, next) => {
 
 router.delete('/:floorId', (req, res, next) => {
   const id = req.params.floorId;
-  Floor.remove({ _id: id })
-    .exec()
+  Floor.findByIdAndDelete(id)
     .then((result) => {
-      console.log(result);
-      res.status(200).json(result);
+      if (!result) {
+        return res.status(404).json({
+          status: 'Floor not found!',
+        });
+      } else {
+        res.status(200).json({
+          status: 'Floor delete successfully!',
+          floor: result,
+        });
+      }
     })
     .catch((err) => {
       console.log(err);
-      res.status(600).json({
+      res.status(500).json({
         error: err,
       });
     });
 });
 
-router.patch('/:floorId', (req, res, next) => {
+router.put('/:floorId', (req, res, next) => {
   const id = req.params.floorId;
-  const updateOps = {};
-  for (const ops of req.body) {
-    updateOps[ops.propName] = ops.value;
+  if (!req.body) {
+    return res.status(400).json({
+      status: 'Data to update can not be empty',
+    });
   }
-  Floor.updateOne({ _id: id }, { $set: updateOps })
-    .exec()
-    .then((result) => {
-      console.log(result);
-      res.status(200).json({
-        message: 'Floor Updated',
-        request: {
-          type: 'GET',
-          url: 'http://localhost:3000/floors/' + id,
-        },
-      });
+  Floor.findByIdAndUpdate(id, req.body)
+    .then((floor) => {
+      if (!floor) {
+        return res.status(404).json({
+          status: 'Floor not found!',
+        });
+      } else {
+        res.status(200).json({
+          status: 'Update floor successfull',
+          floor: {
+            _id: floor._id,
+          },
+          request: {
+            type: 'GET',
+            url: 'http://localhost:3000/floors/' + floor._id,
+          },
+        });
+      }
     })
     .catch((err) => {
       console.log(err);
