@@ -22,7 +22,10 @@ router.post('/', (req, res, next) => {
           .save()
           .then((result) => {
             console.log(result);
-            res.status(201).json(result);
+            res.status(201).json({
+              status: 'Message send!',
+              message: result,
+            });
           })
           .catch((err) => {
             console.log(err);
@@ -46,7 +49,10 @@ router.post('/', (req, res, next) => {
                 .save()
                 .then((result) => {
                   console.log(result);
-                  res.status(201).json(result);
+                  res.status(201).json({
+                    status: 'Message send!',
+                    message: result,
+                  });
                 })
                 .catch((err) => {
                   console.log(err);
@@ -69,7 +75,10 @@ router.post('/', (req, res, next) => {
                     .save()
                     .then((result) => {
                       console.log(result);
-                      res.status(201).json(result);
+                      res.status(201).json({
+                        status: 'Message send!',
+                        message: result,
+                      });
                     })
                     .catch((err) => {
                       console.log(err);
@@ -105,9 +114,29 @@ router.post('/', (req, res, next) => {
 router.get('/', (req, res, next) => {
   Message.find()
     .exec()
-    .then((docs) => {
-      console.log(docs);
-      res.status(200).json(docs);
+    .then((messages) => {
+      console.log(messages);
+      res.status(200).json({
+        status: 'Get all messages',
+        count: messages.length,
+        messages: messages.map((message) => {
+          return {
+            _id: message._id,
+            title: message.title,
+            feedbackLevel: message.feedbackLevel,
+            feedbackType: message.feedbackType,
+            feedbackLocation: message.feedbackLocation,
+            isArchived: message.isArchived,
+            isApproved: message.isApproved,
+            isCompleted: message.isCompleted,
+            createdDate: message.createdDate,
+            request: {
+              type: 'GET',
+              url: 'http://localhost:3000/msg/' + message._id,
+            },
+          };
+        }),
+      });
     })
     .catch((err) => {
       console.log(err);
@@ -116,7 +145,93 @@ router.get('/', (req, res, next) => {
       });
     });
 });
-// router.get('/', (req, res, next) => {});
-// router.get('/', (req, res, next) => {});
+
+router.get('/:messageId', (req, res, next) => {
+  const id = req.params.messageId;
+  Message.findById(id)
+    .then((message) => {
+      if (message) {
+        console.log(message);
+        res.status(200).json({
+          status: 'Get single messages',
+          message: message,
+        });
+      } else {
+        res.status(404).json({
+          status: 'Message not found!',
+        });
+      }
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500).json({
+        error: err,
+      });
+    });
+});
+
+router.delete('/:messageId', (req, res, next) => {
+  const id = req.params.messageId;
+  Message.findByIdAndDelete(id)
+    .then((result) => {
+      if (!result) {
+        res.status(404).json({
+          status: 'Message not found!',
+        });
+      } else {
+        console.log(result);
+        res.status(200).json({
+          status: 'Message delete successfully',
+          message: result,
+        });
+      }
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500).json({
+        error: err,
+      });
+    });
+});
+
+router.post('/approve/:messageId', (req, res, next) => {
+  const date = new Date().toLocaleString('en-US', {
+    timeZone: 'Asia/Bangkok',
+  });
+  const id = req.params.messageId;
+  Message.findByIdAndUpdate(
+    { _id: id },
+    {
+      $set: {
+        isApproved: true,
+        approvedDate: date,
+      },
+    }
+  )
+    .then((message) => {
+      if (!message) {
+        res.status(404).json({
+          status:
+            'Cannot approve message with' + id + '.Maybe message not found!',
+        });
+      } else {
+        console.log(message);
+        res.status(201).json({
+          status: 'Message approved!',
+          message: message,
+          request: {
+            type: 'GET',
+            url: 'http://localhost:3000/msg/' + id,
+          },
+        });
+      }
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500).json({
+        error: err,
+      });
+    });
+});
 
 module.exports = router;
